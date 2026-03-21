@@ -12,9 +12,9 @@ export async function GET() {
     miniapp: {
       version: '1',
       name: 'L2 Gas Race',
-      subtitle: 'Real-time L2 Gas Comparison',
+      subtitle: 'Compare L2 gas fees in real time',
       description:
-        'Compare gas fees across Ethereum, Arbitrum, and Base in real-time. View costs for ETH and ERC-20 transfers with Slow/Average/Fast tiers.',
+        'Track gas prices across Ethereum, Arbitrum, and Base with live updates every 30s. Compare Slow/Average/Fast tiers for ETH and ERC-20 transfers in Gwei and USD.',
       homeUrl: baseUrl,
       iconUrl: `${baseUrl}/icon.png`,
       splashImageUrl: `${baseUrl}/splash.png`,
