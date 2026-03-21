@@ -82,38 +82,40 @@ async function generateOG() {
     <rect x="800" y="0" width="400" height="4" fill="${BASE_COLOR}"/>
 
     <!-- Main title -->
-    <text x="600" y="200" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="80" fill="${TEXT}">⛽ L2 Gas Race</text>
+    <text x="600" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="64" fill="${TEXT}">⛽ L2 Gas Race</text>
 
     <!-- Subtitle -->
-    <text x="600" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" fill="${SUBTITLE}">Real-time Gas Fee Comparison</text>
+    <text x="600" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="${SUBTITLE}">Real-time Gas Fee Comparison</text>
 
-    <!-- Chain cards -->
+    <!-- Chain cards (3 cards: 220px wide, 30px gap, centered) -->
+    <!-- Total width: 220*3 + 30*2 = 720, start x: (1200-720)/2 = 240 -->
+
     <!-- Ethereum -->
-    <rect x="120" y="330" width="280" height="160" rx="16" fill="#111827" stroke="${ETH_COLOR}" stroke-width="3"/>
-    <circle cx="160" cy="375" r="12" fill="${ETH_COLOR}"/>
-    <text x="185" y="382" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="${TEXT}">Ethereum</text>
-    <text x="160" y="430" font-family="monospace" font-size="36" fill="${TEXT}" font-weight="bold">~2.5</text>
-    <text x="280" y="430" font-family="Arial, sans-serif" font-size="20" fill="${SUBTITLE}">Gwei</text>
-    <text x="160" y="465" font-family="Arial, sans-serif" font-size="18" fill="${SUBTITLE}">ETH / ERC-20</text>
+    <rect x="240" y="280" width="220" height="130" rx="12" fill="#111827" stroke="${ETH_COLOR}" stroke-width="2"/>
+    <circle cx="270" cy="316" r="8" fill="${ETH_COLOR}"/>
+    <text x="288" y="322" font-family="Arial, sans-serif" font-weight="bold" font-size="20" fill="${TEXT}">Ethereum</text>
+    <text x="270" y="362" font-family="monospace" font-size="30" fill="${TEXT}" font-weight="bold">~2.5</text>
+    <text x="370" y="362" font-family="Arial, sans-serif" font-size="16" fill="${SUBTITLE}">Gwei</text>
+    <text x="270" y="392" font-family="Arial, sans-serif" font-size="14" fill="${SUBTITLE}">ETH / ERC-20</text>
 
     <!-- Arbitrum -->
-    <rect x="460" y="330" width="280" height="160" rx="16" fill="#111827" stroke="${ARB_COLOR}" stroke-width="3"/>
-    <circle cx="500" cy="375" r="12" fill="${ARB_COLOR}"/>
-    <text x="525" y="382" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="${TEXT}">Arbitrum</text>
-    <text x="500" y="430" font-family="monospace" font-size="36" fill="${TEXT}" font-weight="bold">~0.01</text>
-    <text x="630" y="430" font-family="Arial, sans-serif" font-size="20" fill="${SUBTITLE}">Gwei</text>
-    <text x="500" y="465" font-family="Arial, sans-serif" font-size="18" fill="${SUBTITLE}">ETH / ERC-20</text>
+    <rect x="490" y="280" width="220" height="130" rx="12" fill="#111827" stroke="${ARB_COLOR}" stroke-width="2"/>
+    <circle cx="520" cy="316" r="8" fill="${ARB_COLOR}"/>
+    <text x="538" y="322" font-family="Arial, sans-serif" font-weight="bold" font-size="20" fill="${TEXT}">Arbitrum</text>
+    <text x="520" y="362" font-family="monospace" font-size="30" fill="${TEXT}" font-weight="bold">~0.01</text>
+    <text x="628" y="362" font-family="Arial, sans-serif" font-size="16" fill="${SUBTITLE}">Gwei</text>
+    <text x="520" y="392" font-family="Arial, sans-serif" font-size="14" fill="${SUBTITLE}">ETH / ERC-20</text>
 
     <!-- Base -->
-    <rect x="800" y="330" width="280" height="160" rx="16" fill="#111827" stroke="${BASE_COLOR}" stroke-width="3"/>
-    <circle cx="840" cy="375" r="12" fill="${BASE_COLOR}"/>
-    <text x="865" y="382" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="${TEXT}">Base</text>
-    <text x="840" y="430" font-family="monospace" font-size="36" fill="${TEXT}" font-weight="bold">~0.01</text>
-    <text x="970" y="430" font-family="Arial, sans-serif" font-size="20" fill="${SUBTITLE}">Gwei</text>
-    <text x="840" y="465" font-family="Arial, sans-serif" font-size="18" fill="${SUBTITLE}">ETH / ERC-20</text>
+    <rect x="740" y="280" width="220" height="130" rx="12" fill="#111827" stroke="${BASE_COLOR}" stroke-width="2"/>
+    <circle cx="770" cy="316" r="8" fill="${BASE_COLOR}"/>
+    <text x="788" y="322" font-family="Arial, sans-serif" font-weight="bold" font-size="20" fill="${TEXT}">Base</text>
+    <text x="770" y="362" font-family="monospace" font-size="30" fill="${TEXT}" font-weight="bold">~0.01</text>
+    <text x="868" y="362" font-family="Arial, sans-serif" font-size="16" fill="${SUBTITLE}">Gwei</text>
+    <text x="770" y="392" font-family="Arial, sans-serif" font-size="14" fill="${SUBTITLE}">ETH / ERC-20</text>
 
     <!-- Footer -->
-    <text x="600" y="570" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="#6B7280">Farcaster Mini App</text>
+    <text x="600" y="480" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#6B7280">Farcaster Mini App</text>
 
     <!-- Bottom accent -->
     <rect x="0" y="626" width="400" height="4" fill="${ETH_COLOR}"/>
