@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_URL || ''
+export async function GET(request: NextRequest) {
+  const host = request.headers.get('host') ?? ''
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+  const baseUrl = process.env.NEXT_PUBLIC_URL || `${protocol}://${host}`
 
   const manifest = {
     accountAssociation: {
@@ -12,19 +14,19 @@ export async function GET() {
     miniapp: {
       version: '1',
       name: 'L2 Gas Race',
-      subtitle: 'Compare L2 gas fees in real time',
+      subtitle: 'L2 Gas Fee Tracker',
       description:
-        'Track gas prices across Ethereum, Arbitrum, and Base with live updates every 30s. Compare Slow/Average/Fast tiers for ETH and ERC-20 transfers in Gwei and USD.',
+        'Track gas prices across Ethereum, Arbitrum, and Base with live updates every 30 seconds. Compare Slow, Average, and Fast tiers for ETH and ERC-20 transfers in Gwei and USD.',
       homeUrl: baseUrl,
       iconUrl: `${baseUrl}/icon.png`,
       splashImageUrl: `${baseUrl}/splash.png`,
       splashBackgroundColor: '#030712',
       ogTitle: 'L2 Gas Race',
       ogDescription:
-        'Real-time L2 Gas Comparison — Ethereum / Arbitrum / Base',
+        'Real-time L2 Gas Comparison for Ethereum, Arbitrum, and Base',
       ogImageUrl: `${baseUrl}/og.png`,
       primaryCategory: 'finance',
-      tags: ['gas', 'ethereum', 'arbitrum', 'base', 'l2', 'defi'],
+      tags: ['gas', 'ethereum', 'arbitrum', 'base', 'defi'],
       requiredChains: ['eip155:1', 'eip155:42161', 'eip155:8453'],
       requiredCapabilities: ['actions.ready', 'actions.openUrl'],
     },
