@@ -90,7 +90,7 @@ export async function getAllChainGasData(): Promise<ChainGasData[]> {
       chainId: 1,
       color: '#627EEA',
       emoji: '⟠',
-      rpc: process.env.ETHEREUM_RPC ?? 'https://eth.llamarpc.com',
+      rpc: process.env.ETHEREUM_RPC ?? 'https://ethereum-rpc.publicnode.com',
       viemChain: mainnet,
     },
     {
@@ -98,7 +98,7 @@ export async function getAllChainGasData(): Promise<ChainGasData[]> {
       chainId: 42161,
       color: '#28A0F0',
       emoji: '🔵',
-      rpc: process.env.ARBITRUM_RPC ?? 'https://arb1.arbitrum.io/rpc',
+      rpc: process.env.ARBITRUM_RPC ?? 'https://arbitrum-one-rpc.publicnode.com',
       viemChain: arbitrum,
     },
     {
@@ -106,7 +106,7 @@ export async function getAllChainGasData(): Promise<ChainGasData[]> {
       chainId: 8453,
       color: '#0052FF',
       emoji: '🔷',
-      rpc: process.env.BASE_RPC ?? 'https://mainnet.base.org',
+      rpc: process.env.BASE_RPC ?? 'https://base-rpc.publicnode.com',
       viemChain: base,
     },
   ]
