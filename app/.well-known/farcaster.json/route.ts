@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       name: 'L2 Gas Race',
       subtitle: 'L2 Gas Fee Tracker',
       description:
-        'Track gas prices across Ethereum, Arbitrum, and Base with live updates every 30 seconds. Compare Slow, Average, and Fast tiers for ETH and ERC-20 transfers in Gwei and USD.',
+        'Track gas prices across Ethereum, Arbitrum, and Base with live updates. Compare speed tiers for ETH and ERC-20 transfers in Gwei and USD.',
       homeUrl: baseUrl,
       iconUrl: `${baseUrl}/icon.png`,
       splashImageUrl: `${baseUrl}/splash.png`,
