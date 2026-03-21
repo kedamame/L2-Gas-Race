@@ -7,9 +7,9 @@ export async function GET(request: NextRequest) {
 
   const manifest = {
     accountAssociation: {
-      header: '',
-      payload: '',
-      signature: '',
+      header: 'eyJmaWQiOjIxMTE4OSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDMxOTk5REZCMzI1NkQzMjNDQTA1N0RkMjBhREI1NkI4RUQ0NTE3NzQifQ',
+      payload: 'eyJkb21haW4iOiJsMi1nYXMtcmFjZS52ZXJjZWwuYXBwIn0',
+      signature: 'hJNAn6bpouoeovQX3IHJsIQ8QPzK2oQCmxRthufLhV1mIg4S0r2XfHNmdiwqaMcVVMMri4KXc0h5LgB5mmB0FRs=',
     },
     miniapp: {
       version: '1',
