@@ -7,7 +7,8 @@ import {
 } from '@/lib/app-config'
 
 const appUrl = getAppUrl()
-const baseAppId = process.env.NEXT_PUBLIC_BASE_APP_ID
+const baseAppId =
+  process.env.NEXT_PUBLIC_BASE_APP_ID || '69d252ffecad884a3318a80f'
 
 const miniAppEmbed = {
   version: '1',
