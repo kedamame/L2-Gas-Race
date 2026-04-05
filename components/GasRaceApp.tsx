@@ -1,102 +1,171 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import sdk from '@farcaster/frame-sdk'
+import { useEffect, useState } from 'react'
 import type { ChainGasData } from '@/lib/gas'
+import { APP_NAME, DEFAULT_APP_URL } from '@/lib/app-config'
+import { useMiniApp } from '@/lib/use-miniapp'
 
-const REFRESH_INTERVAL = 30 * 1000  // 30秒
+const REFRESH_INTERVAL = 30 * 1000
 
 const TIER_LABELS = {
-  slow:    { en: 'Slow',    ja: '低速' },
+  slow: { en: 'Slow', ja: '低速' },
   average: { en: 'Average', ja: '標準' },
-  fast:    { en: 'Fast',    ja: '高速' },
-}
+  fast: { en: 'Fast', ja: '高速' },
+} as const
 
 const TIER_COLORS = {
-  slow:    'text-blue-400',
+  slow: 'text-blue-400',
   average: 'text-green-400',
-  fast:    'text-orange-400',
+  fast: 'text-orange-400',
+} as const
+
+function formatGwei(value: number) {
+  if (value === 0) return '--'
+  if (value < 0.01) return value.toFixed(4)
+  if (value < 1) return value.toFixed(3)
+  return value.toFixed(2)
 }
 
-function formatGwei(v: number): string {
-  if (v === 0) return '—'
-  if (v < 0.01) return v.toFixed(4)
-  if (v < 1)    return v.toFixed(3)
-  return v.toFixed(2)
+function formatUsd(value: number) {
+  if (value === 0) return '--'
+  if (value < 0.001) return '<$0.001'
+  if (value < 0.01) return `$${value.toFixed(4)}`
+  return `$${value.toFixed(3)}`
 }
 
-function formatUsd(v: number): string {
-  if (v === 0) return '—'
-  if (v < 0.001) return '<$0.001'
-  if (v < 0.01)  return `$${v.toFixed(4)}`
-  return `$${v.toFixed(3)}`
+function buildShareText(data: ChainGasData[], tab: 'eth' | 'erc20') {
+  const lines = data.map((entry) => {
+    const usd =
+      tab === 'eth'
+        ? entry.usdPerTier.average
+        : entry.erc20UsdPerTier.average
+
+    return `${entry.emoji} ${entry.chain}: ${formatGwei(
+      entry.gasTiers.average
+    )} Gwei (${formatUsd(usd)})`
+  })
+
+  const type = tab === 'eth' ? 'ETH Transfer' : 'ERC-20 Transfer'
+  return `L2 Gas Race | ${type}\n${lines.join('\n')}\n\n#L2GasRace #Base`
 }
 
 export default function GasRaceApp() {
-  const [data, setData]       = useState<ChainGasData[]>([])
+  const [data, setData] = useState<ChainGasData[]>([])
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
-  const [countdown, setCountdown]     = useState(30)
+  const [countdown, setCountdown] = useState(30)
   const [tab, setTab] = useState<'eth' | 'erc20'>('eth')
   const [lang, setLang] = useState<'ja' | 'en'>('ja')
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null)
+  const { isChecking, isInMiniApp, user } = useMiniApp()
 
-  const fetchData = useCallback(async () => {
-    try {
-      const res  = await fetch('/api/gas')
-      const json = await res.json()
-      setData(json)
-      setLastRefresh(new Date())
-      setCountdown(30)
-    } catch {
-      // silent fail
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const t = (ja: string, en: string) => (lang === 'ja' ? ja : en)
 
-  // 初回 + 30秒ポーリング
   useEffect(() => {
-    fetchData()
+    async function fetchData() {
+      try {
+        const res = await fetch('/api/gas')
+        const json = (await res.json()) as ChainGasData[]
+        setData(json)
+        setLastRefresh(new Date())
+        setCountdown(30)
+      } catch {
+        // Keep the previous data on transient fetch failures.
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void fetchData()
     const interval = setInterval(fetchData, REFRESH_INTERVAL)
     return () => clearInterval(interval)
-  }, [fetchData])
+  }, [])
 
-  // カウントダウン表示
   useEffect(() => {
-    const t = setInterval(() => {
-      setCountdown(c => (c <= 1 ? 30 : c - 1))
+    const timer = setInterval(() => {
+      setCountdown((current) => (current <= 1 ? 30 : current - 1))
     }, 1000)
-    return () => clearInterval(t)
+
+    return () => clearInterval(timer)
   }, [])
 
-  // Farcaster SDK 初期化
   useEffect(() => {
-    sdk.actions.ready()
-  }, [])
+    if (!shareFeedback) return
 
-  const handleCast = async () => {
+    const timeout = window.setTimeout(() => {
+      setShareFeedback(null)
+    }, 2500)
+
+    return () => window.clearTimeout(timeout)
+  }, [shareFeedback])
+
+  async function handleShare() {
     if (!data.length) return
-    const lines = data.map(d => {
-      const avg = d.gasTiers.average
-      const usd = tab === 'eth' ? d.usdPerTier.average : d.erc20UsdPerTier.average
-      return `${d.emoji} ${d.chain}: ${formatGwei(avg)} Gwei (${formatUsd(usd)})`
-    })
-    const type  = tab === 'eth' ? 'ETH Transfer' : 'ERC-20 Transfer'
-    const text  = `⛽ L2 Gas Race — ${type}\n${lines.join('\n')}\n\n#L2GasRace #DeFi`
-    await sdk.actions.openUrl(
-      `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`
-    )
-  }
 
-  const t = (ja: string, en: string) => lang === 'ja' ? ja : en
+    const text = buildShareText(data, tab)
+    const currentUrl =
+      typeof window === 'undefined' ? DEFAULT_APP_URL : window.location.href
+
+    if (isInMiniApp) {
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk')
+        await sdk.actions.composeCast({
+          text,
+          embeds: [currentUrl],
+        })
+        setShareFeedback(
+          t('Farcaster composer を開きました', 'Opened Farcaster composer')
+        )
+        return
+      } catch {
+        try {
+          const { sdk } = await import('@farcaster/miniapp-sdk')
+          await sdk.actions.openUrl({
+            url: `https://warpcast.com/~/compose?text=${encodeURIComponent(
+              `${text}\n${currentUrl}`
+            )}`,
+          })
+          setShareFeedback(
+            t('Warpcast compose を開きました', 'Opened Warpcast compose')
+          )
+          return
+        } catch {
+          // Fall through to web sharing.
+        }
+      }
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: APP_NAME,
+          text,
+          url: currentUrl,
+        })
+        setShareFeedback(t('共有シートを開きました', 'Opened share sheet'))
+        return
+      } catch {
+        // Ignore cancel events and fall back to clipboard.
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${text}\n${currentUrl}`)
+      setShareFeedback(
+        t('共有テキストをコピーしました', 'Copied share text')
+      )
+    } catch {
+      setShareFeedback(t('共有に失敗しました', 'Sharing failed'))
+    }
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-950 text-white">
+      <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
         <div className="text-center">
-          <div className="text-3xl mb-2 animate-pulse">⛽</div>
+          <div className="mb-2 text-3xl font-semibold animate-pulse">L2</div>
           <div className="text-sm text-gray-400">
-            {t('ガスデータを取得中…', 'Fetching gas data…')}
+            {t('ガスデータを取得中...', 'Fetching gas data...')}
           </div>
         </div>
       </div>
@@ -104,33 +173,52 @@ export default function GasRaceApp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white px-4 py-5 max-w-md mx-auto">
-
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="mx-auto min-h-screen max-w-md bg-gray-950 px-4 py-5 text-white">
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">
-            ⛽ L2 Gas Race
-          </h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {t('リアルタイム ガス代比較', 'Real-time Gas Comparison')}
+          <h1 className="text-xl font-bold tracking-tight">L2 Gas Race</h1>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {t('リアルタイムガス比較', 'Real-time gas comparison')}
           </p>
         </div>
         <button
-          onClick={() => setLang(l => l === 'ja' ? 'en' : 'ja')}
-          className="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded-full transition"
+          onClick={() => setLang((current) => (current === 'ja' ? 'en' : 'ja'))}
+          className="rounded-full bg-gray-800 px-2 py-1 text-xs transition hover:bg-gray-700"
         >
           {lang === 'ja' ? 'EN' : 'JA'}
         </button>
       </div>
 
-      {/* タブ切替 */}
-      <div className="flex gap-2 mb-4">
-        {(['eth', 'erc20'] as const).map(key => (
+      <div className="mb-4 rounded-2xl border border-gray-800 bg-gray-900/70 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-[0.24em] text-gray-500">
+              {t('モード', 'Mode')}
+            </div>
+            <div className="mt-1 text-sm font-medium text-gray-100">
+              {isChecking
+                ? t('接続先を確認中...', 'Detecting host...')
+                : isInMiniApp
+                  ? t('Farcaster Mini App', 'Farcaster Mini App')
+                  : t('Base Web App / Browser', 'Base Web App / Browser')}
+            </div>
+          </div>
+          <div className="text-right text-xs text-gray-400">
+            {user?.username
+              ? `@${user.username}`
+              : isInMiniApp
+                ? t('Farcaster で起動中', 'Running in Farcaster')
+                : t('通常ブラウザで利用可能', 'Available in any browser')}
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4 flex gap-2">
+        {(['eth', 'erc20'] as const).map((key) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition ${
+            className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition ${
               tab === key
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
@@ -143,39 +231,41 @@ export default function GasRaceApp() {
         ))}
       </div>
 
-      {/* チェーンカード */}
-      <div className="space-y-3 mb-4">
-        {data.map(chain => {
-          const tiers = tab === 'eth' ? chain.usdPerTier : chain.erc20UsdPerTier
+      <div className="mb-4 space-y-3">
+        {data.map((chain) => {
+          const tiers =
+            tab === 'eth' ? chain.usdPerTier : chain.erc20UsdPerTier
+
           return (
             <div
               key={chain.chainId}
-              className="bg-gray-900 rounded-xl p-4 border border-gray-800"
+              className="rounded-xl border border-gray-800 bg-gray-900 p-4"
               style={{ borderLeftColor: chain.color, borderLeftWidth: 3 }}
             >
-              {/* チェーン名 */}
-              <div className="flex items-center gap-2 mb-3">
+              <div className="mb-3 flex items-center gap-2">
                 <span className="text-lg">{chain.emoji}</span>
-                <span className="font-semibold text-sm">{chain.chain}</span>
+                <span className="text-sm font-semibold">{chain.chain}</span>
                 {chain.error && (
                   <span className="ml-auto text-xs text-red-400">
-                    {t('エラー', 'Error')}
+                    {t('取得失敗', 'Error')}
                   </span>
                 )}
               </div>
 
-              {/* Slow / Average / Fast */}
               <div className="grid grid-cols-3 gap-2">
-                {(['slow', 'average', 'fast'] as const).map(tier => (
+                {(['slow', 'average', 'fast'] as const).map((tier) => (
                   <div key={tier} className="text-center">
-                    <div className={`text-xs font-medium mb-1 ${TIER_COLORS[tier]}`}>
+                    <div className={`mb-1 text-xs font-medium ${TIER_COLORS[tier]}`}>
                       {t(TIER_LABELS[tier].ja, TIER_LABELS[tier].en)}
                     </div>
                     <div className="text-sm font-mono font-bold">
                       {formatGwei(chain.gasTiers[tier])}
-                      <span className="text-xs font-normal text-gray-400"> Gwei</span>
+                      <span className="text-xs font-normal text-gray-400">
+                        {' '}
+                        Gwei
+                      </span>
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
+                    <div className="mt-0.5 text-xs text-gray-400">
                       {formatUsd(tiers[tier])}
                     </div>
                   </div>
@@ -186,8 +276,7 @@ export default function GasRaceApp() {
         })}
       </div>
 
-      {/* フッター */}
-      <div className="flex items-center justify-between text-xs text-gray-600 mb-4">
+      <div className="mb-4 flex items-center justify-between text-xs text-gray-600">
         <span>
           {t('次の更新まで', 'Next update in')} {countdown}s
         </span>
@@ -198,14 +287,18 @@ export default function GasRaceApp() {
         )}
       </div>
 
-      {/* キャストボタン */}
       <button
-        onClick={handleCast}
-        className="w-full py-3 bg-purple-600 hover:bg-purple-500 active:bg-purple-700
-                   rounded-xl font-semibold text-sm transition"
+        onClick={() => void handleShare()}
+        className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold transition hover:bg-blue-500 active:bg-blue-700"
       >
-        📢 {t('Farcasterにキャストする', 'Cast to Farcaster')}
+        {isInMiniApp
+          ? t('Farcaster でシェア', 'Share on Farcaster')
+          : t('共有テキストを作成', 'Share or copy update')}
       </button>
+
+      {shareFeedback && (
+        <p className="mt-3 text-center text-xs text-gray-400">{shareFeedback}</p>
+      )}
     </div>
   )
 }

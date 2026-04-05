@@ -1,36 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  APP_DESCRIPTION,
+  APP_NAME,
+  APP_TAGLINE,
+  getAppUrl,
+} from '@/lib/app-config'
 
 export async function GET(request: NextRequest) {
-  const host = request.headers.get('host') ?? ''
-  const protocol = host.includes('localhost') ? 'http' : 'https'
-  const baseUrl = process.env.NEXT_PUBLIC_URL || `${protocol}://${host}`
+  const host = request.headers.get('host')
+  const protocol = host?.includes('localhost') ? 'http' : 'https'
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_URL ||
+    (host ? `${protocol}://${host}` : getAppUrl())
 
-  const manifest = {
-    accountAssociation: {
-      header: 'eyJmaWQiOjIxMTE4OSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDMxOTk5REZCMzI1NkQzMjNDQTA1N0RkMjBhREI1NkI4RUQ0NTE3NzQifQ',
-      payload: 'eyJkb21haW4iOiJsMi1nYXMtcmFjZS52ZXJjZWwuYXBwIn0',
-      signature: 'hJNAn6bpouoeovQX3IHJsIQ8QPzK2oQCmxRthufLhV1mIg4S0r2XfHNmdiwqaMcVVMMri4KXc0h5LgB5mmB0FRs=',
-    },
+  const canonicalDomain = new URL(appUrl).hostname
+
+  const accountAssociation =
+    process.env.FARCASTER_HEADER &&
+    process.env.FARCASTER_PAYLOAD &&
+    process.env.FARCASTER_SIGNATURE
+      ? {
+          header: process.env.FARCASTER_HEADER,
+          payload: process.env.FARCASTER_PAYLOAD,
+          signature: process.env.FARCASTER_SIGNATURE,
+        }
+      : undefined
+
+  return NextResponse.json({
+    ...(accountAssociation ? { accountAssociation } : {}),
     miniapp: {
       version: '1',
-      name: 'L2 Gas Race',
-      subtitle: 'L2 Gas Fee Tracker',
-      description:
-        'Track gas prices across Ethereum, Arbitrum, and Base with live updates. Compare speed tiers for ETH and ERC-20 transfers in Gwei and USD.',
-      homeUrl: baseUrl,
-      iconUrl: `${baseUrl}/icon.png`,
-      splashImageUrl: `${baseUrl}/splash.png`,
+      name: APP_NAME,
+      subtitle: 'Base gas tracker',
+      description: APP_DESCRIPTION,
+      homeUrl: appUrl,
+      iconUrl: `${appUrl}/icon.png`,
+      splashImageUrl: `${appUrl}/splash.png`,
       splashBackgroundColor: '#030712',
-      ogTitle: 'L2 Gas Race',
-      ogDescription:
-        'Real-time L2 Gas Comparison for Ethereum, Arbitrum, and Base',
-      ogImageUrl: `${baseUrl}/og.png`,
-      primaryCategory: 'finance',
-      tags: ['gas', 'ethereum', 'arbitrum', 'base', 'defi'],
-      requiredChains: ['eip155:1', 'eip155:42161', 'eip155:8453'],
-      requiredCapabilities: ['actions.ready', 'actions.openUrl'],
+      primaryCategory: 'utility',
+      tags: ['base', 'gas', 'ethereum', 'arbitrum', 'fees'],
+      heroImageUrl: `${appUrl}/og.png`,
+      tagline: APP_TAGLINE,
+      ogTitle: APP_NAME,
+      ogDescription: APP_DESCRIPTION,
+      ogImageUrl: `${appUrl}/og.png`,
+      requiredChains: ['eip155:8453'],
+      requiredCapabilities: [],
+      noindex: false,
+      canonicalDomain,
     },
-  }
-
-  return NextResponse.json(manifest)
+  })
 }

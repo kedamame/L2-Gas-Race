@@ -1,8 +1,8 @@
-import { createPublicClient, http, formatGwei } from 'viem'
-import { mainnet, arbitrum, base } from 'viem/chains'
+import { createPublicClient, formatGwei, http } from 'viem'
+import { arbitrum, base, mainnet } from 'viem/chains'
 
 export type GasTier = {
-  slow: number    // Gwei
+  slow: number
   average: number
   fast: number
 }
@@ -14,14 +14,12 @@ export type ChainGasData = {
   emoji: string
   gasTiers: GasTier
   usdPerTier: GasTier
-  erc20UsdPerTier: GasTier  // ERC-20送金コスト
+  erc20UsdPerTier: GasTier
   lastUpdated: number
   error?: string
 }
 
-// ERC-20 transfer は約 65,000 gas
 const ERC20_GAS_LIMIT = 65000
-// ETH native transfer は約 21,000 gas
 const ETH_TRANSFER_GAS = 21000
 
 async function getEthPrice(): Promise<number> {
@@ -33,7 +31,7 @@ async function getEthPrice(): Promise<number> {
     const data = await res.json()
     return data.ethereum.usd
   } catch {
-    return 3000 // フォールバック価格
+    return 3000
   }
 }
 
@@ -49,21 +47,19 @@ async function getChainGas(
 
     const block = await client.getBlock({ blockTag: 'latest' })
     const baseFeeWei = block.baseFeePerGas ?? 0n
-
-    // priority fee の推定（チェーンごとに相場が異なる）
     const isL2 = chain.id !== 1
-    const slowPriority = isL2 ? 0.001 : 0.5
-    const avgPriority  = isL2 ? 0.01  : 1.5
-    const fastPriority = isL2 ? 0.1   : 3.0
 
+    const slowPriority = isL2 ? 0.001 : 0.5
+    const averagePriority = isL2 ? 0.01 : 1.5
+    const fastPriority = isL2 ? 0.1 : 3.0
     const baseFeeGwei = Number(formatGwei(baseFeeWei))
 
     return {
       baseFee: baseFeeGwei,
       priorityFees: {
-        slow:    baseFeeGwei + slowPriority,
-        average: baseFeeGwei + avgPriority,
-        fast:    baseFeeGwei + fastPriority,
+        slow: baseFeeGwei + slowPriority,
+        average: baseFeeGwei + averagePriority,
+        fast: baseFeeGwei + fastPriority,
       },
     }
   } catch {
@@ -74,10 +70,11 @@ async function getChainGas(
 function gweiTierToUsd(tier: GasTier, ethUsd: number, gasLimit: number): GasTier {
   const convert = (gwei: number) =>
     parseFloat(((gwei * 1e-9) * gasLimit * ethUsd).toFixed(6))
+
   return {
-    slow:    convert(tier.slow),
+    slow: convert(tier.slow),
     average: convert(tier.average),
-    fast:    convert(tier.fast),
+    fast: convert(tier.fast),
   }
 }
 
@@ -89,7 +86,7 @@ export async function getAllChainGasData(): Promise<ChainGasData[]> {
       chain: 'Ethereum',
       chainId: 1,
       color: '#627EEA',
-      emoji: '⟠',
+      emoji: 'ETH',
       rpc: process.env.ETHEREUM_RPC ?? 'https://ethereum-rpc.publicnode.com',
       viemChain: mainnet,
     },
@@ -97,7 +94,7 @@ export async function getAllChainGasData(): Promise<ChainGasData[]> {
       chain: 'Arbitrum',
       chainId: 42161,
       color: '#28A0F0',
-      emoji: '🔵',
+      emoji: 'ARB',
       rpc: process.env.ARBITRUM_RPC ?? 'https://arbitrum-one-rpc.publicnode.com',
       viemChain: arbitrum,
     },
@@ -105,42 +102,51 @@ export async function getAllChainGasData(): Promise<ChainGasData[]> {
       chain: 'Base',
       chainId: 8453,
       color: '#0052FF',
-      emoji: '🔷',
+      emoji: 'BASE',
       rpc: process.env.BASE_RPC ?? 'https://base-rpc.publicnode.com',
       viemChain: base,
     },
-  ]
+  ] as const
 
   const results = await Promise.allSettled(
-    chains.map(async (c) => {
-      const gasData = await getChainGas(c.rpc, c.viemChain)
+    chains.map(async (chainConfig) => {
+      const gasData = await getChainGas(chainConfig.rpc, chainConfig.viemChain)
       if (!gasData) throw new Error('RPC error')
 
       return {
-        chain:       c.chain,
-        chainId:     c.chainId,
-        color:       c.color,
-        emoji:       c.emoji,
-        gasTiers:    gasData.priorityFees,
-        usdPerTier:  gweiTierToUsd(gasData.priorityFees, ethUsd, ETH_TRANSFER_GAS),
-        erc20UsdPerTier: gweiTierToUsd(gasData.priorityFees, ethUsd, ERC20_GAS_LIMIT),
+        chain: chainConfig.chain,
+        chainId: chainConfig.chainId,
+        color: chainConfig.color,
+        emoji: chainConfig.emoji,
+        gasTiers: gasData.priorityFees,
+        usdPerTier: gweiTierToUsd(
+          gasData.priorityFees,
+          ethUsd,
+          ETH_TRANSFER_GAS
+        ),
+        erc20UsdPerTier: gweiTierToUsd(
+          gasData.priorityFees,
+          ethUsd,
+          ERC20_GAS_LIMIT
+        ),
         lastUpdated: Date.now(),
       } satisfies ChainGasData
     })
   )
 
-  return results.map((r, i) => {
-    if (r.status === 'fulfilled') return r.value
+  return results.map((result, index) => {
+    if (result.status === 'fulfilled') return result.value
+
     return {
-      chain:      chains[i].chain,
-      chainId:    chains[i].chainId,
-      color:      chains[i].color,
-      emoji:      chains[i].emoji,
-      gasTiers:   { slow: 0, average: 0, fast: 0 },
+      chain: chains[index].chain,
+      chainId: chains[index].chainId,
+      color: chains[index].color,
+      emoji: chains[index].emoji,
+      gasTiers: { slow: 0, average: 0, fast: 0 },
       usdPerTier: { slow: 0, average: 0, fast: 0 },
       erc20UsdPerTier: { slow: 0, average: 0, fast: 0 },
       lastUpdated: Date.now(),
-      error: 'データ取得失敗 / Failed to fetch',
+      error: 'Failed to fetch',
     } satisfies ChainGasData
   })
 }
